@@ -8,6 +8,8 @@
     :options.sync="options"
     :server-items-length="totalItems"
     :loading="loading"
+    :page="currentPage"
+    update:sortBy="onSortByUpdate"
     dense
   ).elevation-1.mt-10
      template(v-slot:item.fullname='{ item }')
@@ -17,7 +19,13 @@
 </template>
 <script>
 export default {
-  props: ['headers', 'items', 'loading'],
+  props: [
+    'headers',
+    'items',
+    'loading',
+    'currentPage',
+    'totalItems'
+  ],
   data() {
     return {
       search: '',
@@ -25,10 +33,18 @@ export default {
       //desserts: [],
     }
   },
-  computed: {
-      totalItems(){
-        return this.items.length
-      }
+  // computed: {
+  //     totalItems(){
+  //       return this.items.length
+  //     }
+  // },
+  watch: {
+    options: {
+      handler(newOptions, oldOptions) {
+        this.$emit('fetch', newOptions);
+      },
+    },
+    deep: true,
   },
   methods: {
     customFilterSearch (value, search, item) {
@@ -37,6 +53,12 @@ export default {
         search != null &&
         typeof value === 'string' &&
         value.toString().indexOf(search) !== -1
+    },
+    onPageUpdate(){
+      console.log('opu')
+    },
+    onSortByUpdate(){
+      console.log('sort')
     },
   },
 }
