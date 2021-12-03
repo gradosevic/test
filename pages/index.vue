@@ -1,31 +1,5 @@
 <template lang="pug">
   v-container
-    h2
-      | Filters
-    v-row
-      v-col(cols
-            v-for="type in Object.keys(this.filter)"
-            :key="type"
-            )
-          v-select(
-          v-model="filter[type]"
-          :hint="filter[type] ? `Filter by ${type}` :''"
-          :items="dropdowns[type]"
-          item-text="state"
-          item-value="abbr"
-          :label="`Filter by ${type}`"
-          persistent-hint
-          v-on:change="onFilterChanged(type)"
-          return-object
-          single-line)
-      v-col(cols)
-         v-btn(
-           depressed
-           v-on:click="onResetFilters"
-           )
-            | Reset filters
-    h2
-      | Data
     v-row
       v-col(cols)
         DataTable(
@@ -37,6 +11,7 @@
           :options="options",
           :currentPage="currentPage",
           :pageSize="pageSize"
+          :dropdowns="dropdowns"
           @fetch="fetch"
         )
         v-progress-circular(
@@ -63,12 +38,6 @@ export default {
       items: [],
       totalItems: 0,
       dropdowns: {},
-      filter:{
-        gender: '',
-        country: '',
-        currency: '',
-        color: ''
-      },
       pageSize: 10,
       currentPage: 1,
       fakeServerDelay: 10, //ms
@@ -76,13 +45,13 @@ export default {
       options: {},
       headers: [
         {text: '#', value: 'id', align: 'start'},
-        {text: 'Name', value: 'fullname'},
-        {text: 'Email', value: 'email'},
+        {text: 'Name', value: 'fullname', visible: true},
+        {text: 'Email', value: 'email', visible: true},
         {text: 'Gender', value: 'gender'},
         {text: 'IP Address', value: 'ip_address'},
-        {text: 'Year', value: 'year'},
-        {text: 'Sales', value: 'sales'},
-        {text: 'Country', value: 'country'},
+        {text: 'Year', value: 'year', visible: true},
+        {text: 'Sales', value: 'sales', visible: true},
+        {text: 'Country', value: 'country', visible: true},
         {text: 'Currency', value: 'currency'},
         {text: 'Color', value: 'color'},
       ],
@@ -94,21 +63,49 @@ export default {
 
   methods: {
     prepareDropdownData(dataType){
-      return ['-- Show All --', ...new Set(sales.results.map(item => {
-        return item[dataType]
+      return [{
+        name: '-- Show All --',
+        value: ''
+      }, ...new Set(sales.results
+        .map(item => {
+          return {
+            name: item[dataType],
+            value: item[dataType]
+          }
       }))].sort()
     },
     async fetchData(options) {
-      const {page, itemsPerPage, dropdowns} = options;
+      const {page, itemsPerPage, dropdowns, filter} = options;
       const start = (page - 1) * itemsPerPage
       await this.delay(this.fakeServerDelay)
 
-      console.log('showing...', dropdowns)
+      let data = sales.results;
 
-      console.log()
+      if(filter) {
+        data = sales.results.filter(item => {
+          if(!filter) return true;
+
+          let allFiltersSatisfied = true;
+          Object.keys(filter).forEach(fieldName => {
+
+            //If no filter set, skip
+            if(!filter[fieldName] || !filter[fieldName].value) return false;
+
+            if(filter[fieldName].value !== item[fieldName]){
+              allFiltersSatisfied = false;
+            }
+          });
+          return allFiltersSatisfied;
+        })
+      }
+
+      let total = data.length;
+
+      data = itemsPerPage !== -1 ? data.slice(start, start + itemsPerPage) : data
+
       return {
-        items: itemsPerPage !== -1 ? sales.results.slice(start, start + itemsPerPage) : sales.results,
-        total: sales.results.length,
+        items: data ,
+        total,
         dropdowns: !dropdowns ? null :
           {
             gender: this.prepareDropdownData('gender'),
@@ -120,8 +117,6 @@ export default {
       }
     },
     async fetch(options) {
-      console.log('options', options)
-
       //TODO: tmp fix
       if (!options) {
         options = {
@@ -130,6 +125,8 @@ export default {
           dropdowns: true
         };
       }
+
+      this.options = options
 
       const result = await this.fetchData(options)
       this.items = result.items
@@ -140,12 +137,6 @@ export default {
     },
     delay(ms) {
       return new Promise(resolve => setTimeout(resolve, ms))
-    },
-    onFilterChanged(filterType){
-      console.log(this.filter[filterType]);
-    },
-    onResetFilters(){
-      Object.keys(this.filter).forEach(filterType => this.filter[filterType] = '')
     }
   }
 }
