@@ -40,7 +40,7 @@ export default {
       dropdowns: {},
       pageSize: 10,
       currentPage: 1,
-      fakeServerDelay: 10, //ms
+      fakeServerDelay: 300, //ms
       loading: false,
       options: {},
       headers: [
@@ -128,7 +128,9 @@ export default {
 
       this.options = options
 
+      this.loading = true
       const result = await this.fetchData(options)
+      this.loading = false
       this.items = result.items
       this.totalItems = result.total
       result.dropdowns && (this.dropdowns = result.dropdowns)
