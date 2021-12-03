@@ -6,6 +6,7 @@
           v-if="items.length"
           :headers="headers"
           :items="items"
+          :loading="loading"
         )
         v-progress-circular(
           v-else
@@ -27,8 +28,12 @@ export default {
     return {
       sales,
       items: [],
+      pageSize: 10,
+      currentPage: 1,
+      loading: false,
       headers: [
-        { text: 'Name', value: 'user', align: 'start' },
+        { text: '#', value: 'id', align: 'start' },
+        { text: 'Name', value: 'fullname' },
         { text: 'Email', value: 'email' },
         { text: 'Gender', value: 'gender' },
         { text: 'Year', value: 'year' },
@@ -38,12 +43,14 @@ export default {
     }
   },
   async created() {
-    this.items = await this.fetchData(0, 50)
+    this.items = await this.fetchData(this.currentPage, this.pageSize)
+    this.loading = false
   },
   methods: {
     async fetchData(page, size) {
       const start = page * size
-      await this.delay(3000)
+      await this.delay(1000)
+      console.log(page, size)
       return await sales.results.slice(start, start + size)
     },
     delay(ms) {
